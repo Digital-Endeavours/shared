@@ -1,0 +1,40 @@
+on:
+  workflow_call:
+    inputs:
+      dir:
+        description: 'The subdirectory in use'
+        required: true
+        type: string
+
+jobs:
+  terraform-format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Terraform Format
+        id: fmt
+        run: terraform fmt -write=false -recursive "${GITHUB_WORKSPACE}"
+        continue-on-error: false
+
+      - name: Update Pull Request
+        uses: actions/github-script@v6
+        if: github.event_name == 'pull_request'
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            
+            </details>
+            
+            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: output
+            })

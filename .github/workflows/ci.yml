@@ -1,0 +1,26 @@
+name: Tests at PR
+
+on:
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - edited
+      - synchronize
+
+permissions:
+  pull-requests: write
+  id-token: write
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  s3-hosting:
+    name: Terraform Format S3 Hosting
+    uses: ./.github/workflows/ci_tf_fmt.yml
+    with:
+      dir: ./s3-hosting
+    secrets: inherit
