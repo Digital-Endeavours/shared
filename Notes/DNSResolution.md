@@ -13,7 +13,7 @@
 
 ## DNS Hostnames in VPC
 
-### Enable the DNS Hostnames setting in VPC.
+### Enable the DNS Hostnames setting in VPC
 
 - On by default in the default VPC otherwise disabled by default.
 - If enabled then EC2 instances get public hostnames, otherwise private DNS hostnames
@@ -21,6 +21,3 @@
 ## Other
 
 - Custom DNS domain names in Private Hosted Zones need both options to be set to function via Route53 Resolver.
-
-
-

@@ -9,6 +9,7 @@ This document provides a critical analysis of AWS Resilience Hub and AWS Fault I
 AWS Resilience Hub is a centralised service for assessing application resilience against defined Recovery Time Objective (RTO) and Recovery Point Objective (RPO) targets. It analyses your infrastructure configuration, compares it to AWS Well-Architected Framework best practices, and provides actionable recommendations for improvement.
 
 **Core capabilities:**
+
 - Automated discovery of resources via Terraform state, CloudFormation stacks, or Resource Groups
 - Assessment against custom resiliency policies (AZ, regional, and application-level RTO/RPO targets)
 - Compliance tracking and drift detection
@@ -23,6 +24,7 @@ AWS Resilience Hub is a centralised service for assessing application resilience
 AWS Fault Injection Simulator is a fully managed chaos engineering service that lets you run controlled fault injection experiments on AWS workloads. It provides built-in safety mechanisms including stop conditions based on CloudWatch alarms.
 
 **Core capabilities:**
+
 - Pre-built experiment templates for common failure scenarios
 - Actions targeting EC2, RDS, ECS, EKS, EBS, network, and API layers
 - Stop conditions acting as circuit breakers to prevent runaway failures
@@ -36,7 +38,7 @@ AWS Fault Injection Simulator is a fully managed chaos engineering service that 
 
 ### Strong Use Cases
 
-**1. Infrastructure with architectural choices affecting resilience**
+#### Infrastructure with architectural choices affecting resilience
 
 Resilience Hub and FIS excel when you have decisions to make that materially impact your ability to meet RTO/RPO targets:
 
@@ -47,7 +49,7 @@ Resilience Hub and FIS excel when you have decisions to make that materially imp
 
 FIS allows you to validate that your architectural choices actually deliver the resilience you expect. For example, testing that RDS Multi-AZ failover completes within your RTO, or that your Auto Scaling Group properly replaces terminated instances under load.
 
-**2. Complex applications with recovery procedures**
+#### Complex applications with recovery procedures
 
 When you have documented runbooks or Standard Operating Procedures for failure scenarios:
 
@@ -56,7 +58,7 @@ When you have documented runbooks or Standard Operating Procedures for failure s
 - Identifying gaps in runbooks before they matter in production
 - Training operations teams on failure response
 
-**3. Compliance and regulatory requirements**
+#### Compliance and regulatory requirements
 
 When you need to demonstrate disaster recovery capabilities:
 
@@ -65,7 +67,7 @@ When you need to demonstrate disaster recovery capabilities:
 - Regular validation of backup and recovery procedures
 - Tracking resilience improvements over time
 
-**4. Multi-component applications with dependencies**
+#### Multi-component applications with dependencies
 
 When failure in one component cascades to others:
 
@@ -76,7 +78,7 @@ When failure in one component cascades to others:
 
 ### Moderate Use Cases
 
-**5. Serverless applications with stateful components**
+#### Serverless applications with stateful components
 
 Pure serverless (Lambda + API Gateway + DynamoDB) is largely managed by AWS, but you might still benefit when:
 
@@ -91,7 +93,7 @@ The value here is lower than traditional infrastructure but not zero. Consider w
 
 ### Weak Use Cases
 
-**1. Fully managed serverless with no architectural choices**
+#### Fully managed serverless with no architectural choices
 
 Applications built entirely on managed services with built-in high availability:
 
@@ -103,7 +105,7 @@ These services already provide multi-AZ resilience automatically. Resilience Hub
 
 **Better approach:** Focus on data resilience (versioning, backups) and deployment resilience (can you rebuild from source control?).
 
-**2. Non-critical internal applications**
+#### Non-critical internal applications
 
 Applications where downtime is inconvenient but not costly:
 
@@ -114,7 +116,7 @@ Applications where downtime is inconvenient but not costly:
 
 The cost of Resilience Hub and the effort of running FIS experiments likely exceeds the value gained. Simple monitoring and basic backup procedures are usually sufficient.
 
-**3. Applications with naturally high tolerance to failure**
+#### Applications with naturally high tolerance to failure
 
 Systems designed to be eventually consistent or tolerant of temporary unavailability:
 
@@ -131,23 +133,28 @@ Use this framework to determine if Resilience Hub and FIS are appropriate for yo
 
 ### Ask These Questions
 
-**1. Do you have meaningful architectural choices?**
+#### Do you have meaningful architectural choices?
+
 - Yes: Multi-AZ vs single, backup strategies, failover patterns → **Strong candidate**
 - No: Fully managed services with no configuration options → **Weak candidate**
 
-**2. What is the cost of downtime?**
+#### What is the cost of downtime?
+
 - High: Revenue loss, customer impact, SLA penalties → **Strong candidate**
 - Low: Minor inconvenience, easily deferred work → **Weak candidate**
 
-**3. Do you have recovery procedures to validate?**
+#### Do you have recovery procedures to validate?
+
 - Yes: Documented runbooks, manual failover steps → **Strong candidate for FIS**
 - No: Automatic recovery, no operator intervention needed → **Consider alternatives**
 
-**4. Are there compliance requirements?**
+#### Are there compliance requirements?
+
 - Yes: Need to demonstrate DR capabilities → **Strong candidate for both**
 - No: Internal application, no regulatory oversight → **Evaluate cost vs benefit**
 
-**5. Is the application stateful?**
+#### Is the application stateful?
+
 - Yes: Data loss or corruption has consequences → **Strong candidate**
 - No: Stateless, can be rebuilt from source → **Probably overkill**
 
@@ -156,12 +163,14 @@ Use this framework to determine if Resilience Hub and FIS are appropriate for yo
 For each application, estimate:
 
 **Costs:**
+
 - Resilience Hub: £15/month per application
 - FIS experiments: Variable based on frequency and scope
 - Engineering time: Setup, experiment design, analysis
 - Risk: Potential impact of experiments on production
 
 **Benefits:**
+
 - Reduced downtime duration and frequency
 - Faster incident response through validated procedures
 - Compliance evidence and audit trail
@@ -174,12 +183,14 @@ If benefits clearly outweigh costs, proceed. If marginal, consider simpler alter
 Before committing to Resilience Hub and FIS, evaluate whether simpler approaches meet your needs:
 
 **For assessment:**
+
 - Manual Well-Architected Framework reviews
 - AWS Trusted Advisor (limited resilience checks, but free)
 - Internal architecture review processes
 - Third-party resilience assessment tools
 
 **For testing:**
+
 - Manual game days (coordinated failure simulations)
 - Deployment pipeline tests (can you rebuild from scratch?)
 - Backup restoration tests (verify backups work)
@@ -208,12 +219,14 @@ Resilience Hub and FIS can work in combination: assessments identify potential w
 AWS Resilience Hub and Fault Injection Simulator are powerful tools for organisations serious about application resilience. However, they are not universal solutions.
 
 **Use them when:**
+
 - You have complex, stateful applications with business-critical uptime requirements
 - Architectural choices materially affect your ability to meet RTO/RPO targets
 - You need to validate recovery procedures with actual testing
 - Compliance requires demonstrated disaster recovery capabilities
 
 **Consider alternatives when:**
+
 - Applications are built on fully managed, serverless services with built-in HA
 - Downtime costs are minimal or non-existent
 - Applications are naturally fault-tolerant by design
