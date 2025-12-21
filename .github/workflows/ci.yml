@@ -18,9 +18,39 @@ defaults:
     shell: bash
 
 jobs:
-  s3-hosting:
-    name: Terraform Format S3 Hosting
+  detect-changes:
+    name: Detect File Changes
+    runs-on: ubuntu-latest
+    outputs:
+      terraform: ${{ steps.filter.outputs.terraform }}
+      markdown: ${{ steps.filter.outputs.markdown }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            terraform:
+              - '**/*.tf'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/ci_tf_*.yml'
+            markdown:
+              - '**/*.md'
+              - '.github/workflows/ci.yml'
+              - '.github/workflows/ci_md_*.yml'
+  
+  terraform-checks:
+    name: Terraform Format and Validate
+    needs: detect-changes
+    if: needs.detect-changes.outputs.terraform == 'true'
     uses: ./.github/workflows/ci_tf_fmt.yml
     with:
       dir: ./s3-hosting
+    secrets: inherit
+  
+  markdown-checks:
+    name: Markdown Quality Checks
+    needs: detect-changes
+    if: needs.detect-changes.outputs.markdown == 'true'
+    uses: ./.github/workflows/ci_md_lint.yml
     secrets: inherit

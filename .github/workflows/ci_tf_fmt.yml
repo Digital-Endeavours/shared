@@ -7,30 +7,57 @@ on:
         type: string
 
 jobs:
-  terraform-format:
+  terraform-checks:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
-        uses: actions/checkout@v3.0.1
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.event.pull_request.head.sha }}
-
-      - name: Terraform Format
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+      
+      - name: Terraform Format Check
         id: fmt
-        run: terraform fmt -write=false -recursive "${GITHUB_WORKSPACE}"
-        continue-on-error: false
-
+        run: terraform fmt -check -recursive "${GITHUB_WORKSPACE}"
+        continue-on-error: true
+      
+      - name: Terraform Init
+        id: init
+        run: |
+          cd "${{ inputs.dir }}"
+          terraform init -backend=false
+        continue-on-error: true
+      
+      - name: Terraform Validate
+        id: validate
+        run: |
+          cd "${{ inputs.dir }}"
+          terraform validate -no-color
+        continue-on-error: true
+      
       - name: Update Pull Request
-        uses: actions/github-script@v6
+        uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+            const fmtOutcome = '${{ steps.fmt.outcome }}' === 'success' ? 'PASS' : 'FAIL';
+            const initOutcome = '${{ steps.init.outcome }}' === 'success' ? 'PASS' : 'FAIL';
+            const validateOutcome = '${{ steps.validate.outcome }}' === 'success' ? 'PASS' : 'FAIL';
             
-            </details>
+            const output = `#### Terraform Checks
             
-            *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+            | Check | Result |
+            |-------|--------|
+            | Format | ${fmtOutcome} |
+            | Init | ${initOutcome} |
+            | Validate | ${validateOutcome} |
+            
+            **Directory:** \`${{ inputs.dir }}\`
+            **Pushed by:** @${{ github.actor }}
+            **Action:** \`${{ github.event_name }}\``;
             
             github.rest.issues.createComment({
               issue_number: context.issue.number,
@@ -38,3 +65,7 @@ jobs:
               repo: context.repo.repo,
               body: output
             })
+      
+      - name: Check Results
+        if: steps.fmt.outcome != 'success' || steps.init.outcome != 'success' || steps.validate.outcome != 'success'
+        run: exit 1
