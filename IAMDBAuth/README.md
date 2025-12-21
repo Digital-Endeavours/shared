@@ -1,4 +1,4 @@
-#About neptune_query.py
+# About neptune_query.py
 * If you are making use of a graph database on AWS, then you are likely to want
   a hosted option rather than hosting and maintaining it yourselves,
   AWS Neptune is currently the only choice. 
