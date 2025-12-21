@@ -12,6 +12,7 @@
 - If enabled then EC2 instances get public hostnames, otherwise private DNS hostnames
 
 ## Other
+
 - Custom DNS domain names in Private Hosted Zones need both options to be set to function via Route53 Resolver.
 
 
