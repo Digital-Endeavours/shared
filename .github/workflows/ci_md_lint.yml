@@ -18,6 +18,17 @@ jobs:
         continue-on-error: true
         id: lint
       
+      - name: Run markdownlint with output capture
+        if: steps.lint.outcome != 'success'
+        id: lint_errors
+        run: |
+          npm install -g markdownlint-cli2
+          markdownlint-cli2 '**/*.md' > lint_output.txt 2>&1 || true
+          echo "errors<<EOF" >> $GITHUB_OUTPUT
+          cat lint_output.txt >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+        continue-on-error: true
+      
       - name: Update Pull Request - Lint Results
         uses: actions/github-script@v7
         if: github.event_name == 'pull_request'
@@ -25,12 +36,24 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const lintOutcome = '${{ steps.lint.outcome }}' === 'success' ? 'PASS' : 'FAIL';
+            const errors = `${{ steps.lint_errors.outputs.errors }}`;
             
-            const output = `#### Markdown Linting
+            let output = `#### Markdown Linting
             
             | Check | Result |
             |-------|--------|
-            | Lint | ${lintOutcome} |
+            | Lint | ${lintOutcome} |`;
+            
+            if (lintOutcome === 'FAIL' && errors) {
+              output += `
+            
+            **Errors Found:**
+            \`\`\`
+            ${errors}
+            \`\`\``;
+            }
+            
+            output += `
             
             **Pushed by:** @${{ github.actor }}
             **Action:** \`${{ github.event_name }}\``;
@@ -58,10 +81,23 @@ jobs:
       - name: Check links
         uses: gaurav-nelson/github-action-markdown-link-check@v1
         with:
-          use-quiet-mode: 'yes'
-          use-verbose-mode: 'no'
+          use-quiet-mode: 'no'
+          use-verbose-mode: 'yes'
         continue-on-error: true
         id: linkcheck
+      
+      - name: Capture link errors
+        if: steps.linkcheck.outcome != 'success'
+        id: link_errors
+        run: |
+          if [ -f md-link-check.log ]; then
+            echo "errors<<EOF" >> $GITHUB_OUTPUT
+            cat md-link-check.log >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          else
+            echo "errors=No error log found" >> $GITHUB_OUTPUT
+          fi
+        continue-on-error: true
       
       - name: Update Pull Request - Link Check Results
         uses: actions/github-script@v7
@@ -70,12 +106,24 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const linkOutcome = '${{ steps.linkcheck.outcome }}' === 'success' ? 'PASS' : 'FAIL';
+            const errors = `${{ steps.link_errors.outputs.errors }}`;
             
-            const output = `#### Markdown Link Check
+            let output = `#### Markdown Link Check
             
             | Check | Result |
             |-------|--------|
-            | Links | ${linkOutcome} |
+            | Links | ${linkOutcome} |`;
+            
+            if (linkOutcome === 'FAIL' && errors) {
+              output += `
+            
+            **Errors Found:**
+            \`\`\`
+            ${errors}
+            \`\`\``;
+            }
+            
+            output += `
             
             **Pushed by:** @${{ github.actor }}
             **Action:** \`${{ github.event_name }}\``;

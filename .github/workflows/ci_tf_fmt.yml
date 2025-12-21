@@ -20,13 +20,26 @@ jobs:
       
       - name: Terraform Format Check
         id: fmt
-        run: terraform fmt -check -recursive "${GITHUB_WORKSPACE}"
+        run: |
+          terraform fmt -check -recursive "${GITHUB_WORKSPACE}" > fmt_output.txt 2>&1 || true
+          if [ -s fmt_output.txt ]; then
+            echo "errors<<EOF" >> $GITHUB_OUTPUT
+            cat fmt_output.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
+          terraform fmt -check -recursive "${GITHUB_WORKSPACE}"
         continue-on-error: true
       
       - name: Terraform Init
         id: init
         run: |
           cd "${{ inputs.dir }}"
+          terraform init -backend=false > init_output.txt 2>&1 || true
+          if [ $? -ne 0 ]; then
+            echo "errors<<EOF" >> $GITHUB_OUTPUT
+            cat init_output.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
           terraform init -backend=false
         continue-on-error: true
       
@@ -34,6 +47,12 @@ jobs:
         id: validate
         run: |
           cd "${{ inputs.dir }}"
+          terraform validate -no-color > validate_output.txt 2>&1 || true
+          if [ $? -ne 0 ]; then
+            echo "errors<<EOF" >> $GITHUB_OUTPUT
+            cat validate_output.txt >> $GITHUB_OUTPUT
+            echo "EOF" >> $GITHUB_OUTPUT
+          fi
           terraform validate -no-color
         continue-on-error: true
       
@@ -47,13 +66,46 @@ jobs:
             const initOutcome = '${{ steps.init.outcome }}' === 'success' ? 'PASS' : 'FAIL';
             const validateOutcome = '${{ steps.validate.outcome }}' === 'success' ? 'PASS' : 'FAIL';
             
-            const output = `#### Terraform Checks
+            const fmtErrors = `${{ steps.fmt.outputs.errors }}`;
+            const initErrors = `${{ steps.init.outputs.errors }}`;
+            const validateErrors = `${{ steps.validate.outputs.errors }}`;
+            
+            let output = `#### Terraform Checks
             
             | Check | Result |
             |-------|--------|
             | Format | ${fmtOutcome} |
             | Init | ${initOutcome} |
-            | Validate | ${validateOutcome} |
+            | Validate | ${validateOutcome} |`;
+            
+            if (fmtOutcome === 'FAIL' && fmtErrors) {
+              output += `
+            
+            **Format Errors:**
+            \`\`\`
+            ${fmtErrors}
+            \`\`\``;
+            }
+            
+            if (initOutcome === 'FAIL' && initErrors) {
+              output += `
+            
+            **Init Errors:**
+            \`\`\`
+            ${initErrors}
+            \`\`\``;
+            }
+            
+            if (validateOutcome === 'FAIL' && validateErrors) {
+              output += `
+            
+            **Validate Errors:**
+            \`\`\`
+            ${validateErrors}
+            \`\`\``;
+            }
+            
+            output += `
             
             **Directory:** \`${{ inputs.dir }}\`
             **Pushed by:** @${{ github.actor }}
